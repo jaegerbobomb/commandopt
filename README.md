@@ -12,7 +12,7 @@ It reduces the boilerplate code in your `main()`.
 
 
 ```py
-//myapp/myapp.py
+#myapp/myapp.py
 """Naval Fate.
 
 Usage:
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 ```
 
 ```py
-//myapp/commands/ship.py
+#myapp/commands/ship.py
 from commandopt import commandopt
 
 class ShipCommand:
