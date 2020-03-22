@@ -4,12 +4,24 @@ Turn a dict of arguments into cli commands, ideal companion of docopt.
 ## Why ?
 
 Using the `commandopt.commandopt` decorator, you are able to declare commands to be
-executed depending on the input arguments of your app.
+executed depending on the input arguments of your app (required or optional).
 
 It reduces the boilerplate code in your `main()`.
 
-## Example usage :
+## Declaration
 
+```py
+def commandopt(mandopts: List, opts: List = None):
+    # ...
+```
+### Call
+
+```py
+@commandopt(mandatory_arguments, optional_arguments)
+def xxxx(*args, **kwargs):
+```
+
+## Example usage
 
 ```py
 #myapp/myapp.py
@@ -17,6 +29,7 @@ It reduces the boilerplate code in your `main()`.
 
 Usage:
   naval_fate.py ship new <name>...
+  naval_fate.py new-ship [<name>]
   naval_fate.py --version
 
 Options:
@@ -44,7 +57,7 @@ from commandopt import commandopt
 class ShipCommand:
 
     @commandopt(["ship", "new", "<name>"])
-    @commandopt(["ship", "new"])
+    @commandopt(["new-ship"], ["<name>"])
     def new(arguments):
         """You can stack the decorator if you want."""
         name = arguments["<name>"] or "case when name is empty"

@@ -1,28 +1,36 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 import functools
+from itertools import chain, combinations
 
 from commandopt.exceptions import NoCommandFoundError
 
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 
-def commandopt(opts):
+def commandopt(mandopts, opts=None):
     """Decorator to register commands given docopt arguments.
 
-    :param opts:  Dict of arguments required
+    :param mandopts:  List of mandatory arguments
+    :param opts:      List of optional arguments
     """
+    opts = [] if opts is None else opts
 
     def inner_decorator(f):
-
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             return f(*args, **kwargs)
 
         # register wrapped function in Command.COMMANDS mapping
-        Command.add_command(opts, wrapped)
+        Command.add_command(mandopts, wrapped)
+        # get all combinations of optionals arguments
+        # ex : (opt1,), (opt2,), (opt1, opt2) ...
+        opts_combinations = [combinations(opts, r) for r in range(len(opts) + 1)]
+        for combination in chain.from_iterable(opts_combinations):
+            # register wrapped function with optional arguments
+            Command.add_command(mandopts + list(combination), wrapped)
         return wrapped
 
     return inner_decorator
@@ -61,4 +69,3 @@ class Command(object):
             if opts_input == set(c.opts):
                 return c.f
         raise NoCommandFoundError(opts_input)
-

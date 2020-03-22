@@ -24,3 +24,20 @@ def test_commandopt_decorator_only_mandatory_opts():
     with pytest.raises(NoCommandFoundError):
         Command.choose_command({"command": True, "<mandatory2>": True})
 
+
+def test_commandopt_decorator_mandatory_and_optional_opts():
+    @commandopt(["command2"], ["--option1", "--option2"])
+    def function(*args, **kwargs):
+        pass
+
+    arguments = [
+        {"command2": True},
+        {"command2": True, "--option1": True},
+        {"command2": True, "--option2": True},
+        {"command2": True, "--option1": True, "--option2": True},
+    ]
+    for args in arguments:
+        assert Command.choose_command(args).__wrapped__ == function.__wrapped__
+
+    with pytest.raises(NoCommandFoundError):
+        Command.choose_command({"--option1": True})
