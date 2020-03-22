@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
+import functools
 
 from commandopt.exceptions import NoCommandFoundError
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 
@@ -16,6 +17,7 @@ def commandopt(opts):
 
     def inner_decorator(f):
 
+        @functools.wraps(f)
         def wrapped(*args, **kwargs):
             return f(*args, **kwargs)
 
