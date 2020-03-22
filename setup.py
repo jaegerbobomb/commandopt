@@ -18,7 +18,7 @@ setup(
     url="https://github.com/jaegerbobomb/commandopt",
     download_url="https://github.com/jaegerbobomb/commandopt/archive/v0.1.0.tar.gz",
     author="notmarrco",
-    author_email="marrco@wohecha.fr",
+    author_email="marc@maj44.com",
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     classifiers=[
         "Programming Language :: Python :: 3",
