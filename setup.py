@@ -2,7 +2,7 @@
 """Commandopt setup file.
 
 """
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 from commandopt import __version__
 
@@ -16,7 +16,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jaegerbobomb/commandopt",
-    download_url="https://github.com/jaegerbobomb/commandopt/archive/v0.2.0.tar.gz",
+    download_url="https://github.com/jaegerbobomb/commandopt/archive/v0.2.1.tar.gz",
     author="notmarrco",
     author_email="marc@maj44.com",
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
@@ -25,5 +25,5 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.2'
+    python_requires=">=3.2",
 )

@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple
 import functools
+from collections import namedtuple
 from itertools import chain, combinations
 
 from commandopt.exceptions import NoCommandFoundError
 
-
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 
-def commandopt(mandopts, opts=None):
+def commandopt(mandopts: list[str], opts=None):
     """Decorator to register commands given docopt arguments.
 
     :param mandopts:  List of mandatory arguments
@@ -39,7 +38,7 @@ def commandopt(mandopts, opts=None):
 class Command(object):
     """Dumb class to keep all the registered commands."""
 
-    COMMANDS = set()
+    COMMANDS: set[CommandsOpts] = set()
 
     def __new__(cls, arguments, call=False, give_kwargs=False):
         """Select the right command function and call it if asked."""
@@ -54,11 +53,11 @@ class Command(object):
         return f
 
     @classmethod
-    def add_command(cls, opts, f):
+    def add_command(cls, opts: list[str], f):
         cls.COMMANDS.add(CommandsOpts(opts=tuple(opts), f=f))
 
     @classmethod
-    def list_commands(cls):
+    def list_commands(cls) -> set[CommandsOpts]:
         return cls.COMMANDS
 
     @classmethod

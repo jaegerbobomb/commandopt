@@ -1,4 +1,5 @@
 # commandopt
+
 Turn a dict of arguments into cli commands, ideal companion of docopt.
 
 ## Why ?
@@ -8,12 +9,13 @@ executed depending on the input arguments of your app (required or optional).
 
 It reduces the boilerplate code in your `main()`.
 
-## Declaration
+## Signature
 
 ```py
 def commandopt(mandopts: List, opts: List = None):
     # ...
 ```
+
 ### Call
 
 ```py
