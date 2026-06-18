@@ -24,3 +24,10 @@ Use a descriptive, kebab-case name with a type prefix:
 
 All code, identifiers, comments, documentation, and commit messages are written
 in **English**.
+
+## Changelog
+
+Every change is recorded in `CHANGELOG.md` under the `[Unreleased]` section,
+following the [Keep a Changelog](https://keepachangelog.com/) format
+(`Added` / `Changed` / `Fixed` / ...). Update it in the same commit as the
+change itself.
