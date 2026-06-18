@@ -53,6 +53,11 @@ class Command(object):
         return f
 
     @classmethod
+    def reset(cls):
+        """Clear the global registry (useful for test isolation)."""
+        cls.COMMANDS = set()
+
+    @classmethod
     def add_command(cls, opts: list[str], f):
         cls.COMMANDS.add(CommandsOpts(opts=tuple(opts), f=f))
 

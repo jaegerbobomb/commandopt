@@ -1,0 +1,6 @@
+# Minimal lint configuration: default pyflakes (F) + pycodestyle errors (E).
+# Kept intentionally narrow so existing style choices are not forced to change.
+line-length = 100
+
+[lint]
+select = ["E", "F"]

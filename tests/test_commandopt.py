@@ -41,3 +41,25 @@ def test_commandopt_decorator_mandatory_and_optional_opts():
 
     with pytest.raises(NoCommandFoundError):
         Command.choose_command({"--option1": True})
+
+
+def test_no_command_found_error_has_message():
+    error = NoCommandFoundError({"x"})
+    assert "No command found" in str(error)
+
+
+def test_command_call_true_executes_function():
+    @commandopt(["run"])
+    def function(arguments):
+        return "executed"
+
+    assert Command({"run": True}, call=True) == "executed"
+
+
+def test_command_give_kwargs_raises_not_implemented():
+    @commandopt(["run"])
+    def function(arguments):
+        return "executed"
+
+    with pytest.raises(NotImplementedError):
+        Command({"run": True}, call=True, give_kwargs=True)
