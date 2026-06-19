@@ -31,3 +31,10 @@ Every change is recorded in `CHANGELOG.md` under the `[Unreleased]` section,
 following the [Keep a Changelog](https://keepachangelog.com/) format
 (`Added` / `Changed` / `Fixed` / ...). Update it in the same commit as the
 change itself.
+
+## Commit hygiene
+
+Commit messages must **never** contain links to assistant conversations or
+sessions, nor any internal session identifier (no `Claude-Session:` trailer, no
+`claude.ai/code/session_...` URL, or equivalent). Such links leak private
+context and must stay out of the repository history.

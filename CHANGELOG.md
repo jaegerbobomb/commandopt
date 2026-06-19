@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests covering the `NoCommandFoundError` message, the `call=True` execution
   path, and the `give_kwargs=True` `NotImplementedError`.
 - `CLAUDE.md` documenting the project conventions (TDD, branch naming, English,
-  changelog).
+  changelog, commit hygiene).
 
 ### Fixed
 - `NoCommandFoundError` now calls `super().__init__`, so its message is no
