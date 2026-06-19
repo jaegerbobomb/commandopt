@@ -10,3 +10,4 @@ class CommandoptException(Exception):
 class NoCommandFoundError(CommandoptException):
     def __init__(self, opts):
         self.message = "No command found for opts = {}".format(opts)
+        super().__init__(self.message)
