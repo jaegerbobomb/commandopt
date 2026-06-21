@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CLAUDE.md` documenting the project conventions (TDD, branch naming, English,
   changelog, commit hygiene).
 
+### Changed
+- Align the advertised Python support with the PEP 585 type hints actually in
+  use: `python_requires` is now `>=3.9`, `tox.ini` targets py39–py313, and
+  version classifiers are declared accordingly. A `tests/test_packaging.py`
+  guard locks this consistency.
+
 ### Fixed
 - `NoCommandFoundError` now calls `super().__init__`, so its message is no
   longer empty when the exception is stringified.
