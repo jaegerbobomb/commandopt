@@ -5,7 +5,7 @@ from itertools import chain, combinations
 
 from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 
