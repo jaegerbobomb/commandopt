@@ -18,8 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path, and the `give_kwargs=True` `NotImplementedError`.
 - `CLAUDE.md` documenting the project conventions (TDD, branch naming, English,
   changelog, commit hygiene).
+- `CommandCollisionError`, raised when two different functions are registered
+  for the same set of options, instead of silently keeping one at random.
+- README "Command matching" section documenting the set-based matching and the
+  new collision behaviour.
 
 ### Changed
+- `Command.COMMANDS` is now a `dict` indexed by `frozenset(opts)` instead of a
+  `set` of `CommandsOpts`. This gives O(1) command lookup in `choose_command`,
+  makes selection independent of the options' declaration order, and detects
+  duplicate registrations deterministically.
 - Align the advertised Python support with the PEP 585 type hints actually in
   use: `python_requires` is now `>=3.9`, `tox.ini` targets py39–py313, and
   version classifiers are declared accordingly. A `tests/test_packaging.py`

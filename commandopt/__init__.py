@@ -3,7 +3,7 @@ import functools
 from collections import namedtuple
 from itertools import chain, combinations
 
-from commandopt.exceptions import NoCommandFoundError
+from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
 __version__ = "0.2.1"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
@@ -38,7 +38,10 @@ def commandopt(mandopts: list[str], opts=None):
 class Command(object):
     """Dumb class to keep all the registered commands."""
 
-    COMMANDS: set[CommandsOpts] = set()
+    # Indexed by the frozenset of options for O(1) lookup and natural
+    # duplicate detection (the order of the options is irrelevant when
+    # matching, so two declarations with the same options collide).
+    COMMANDS: dict[frozenset[str], CommandsOpts] = {}
 
     def __new__(cls, arguments, call=False, give_kwargs=False):
         """Select the right command function and call it if asked."""
@@ -55,21 +58,25 @@ class Command(object):
     @classmethod
     def reset(cls):
         """Clear the global registry (useful for test isolation)."""
-        cls.COMMANDS = set()
+        cls.COMMANDS = {}
 
     @classmethod
     def add_command(cls, opts: list[str], f):
-        cls.COMMANDS.add(CommandsOpts(opts=tuple(opts), f=f))
+        key = frozenset(opts)
+        existing = cls.COMMANDS.get(key)
+        if existing is not None and existing.f is not f:
+            raise CommandCollisionError(set(opts), existing.f, f)
+        cls.COMMANDS[key] = CommandsOpts(opts=tuple(opts), f=f)
 
     @classmethod
     def list_commands(cls) -> set[CommandsOpts]:
-        return cls.COMMANDS
+        return set(cls.COMMANDS.values())
 
     @classmethod
     def choose_command(cls, arguments):
         # First get all "True" arguments from docopt
-        opts_input = set([opt for opt in arguments.keys() if arguments[opt]])
-        for c in cls.COMMANDS:
-            if opts_input == set(c.opts):
-                return c.f
-        raise NoCommandFoundError(opts_input)
+        opts_input = frozenset(opt for opt in arguments.keys() if arguments[opt])
+        command = cls.COMMANDS.get(opts_input)
+        if command is not None:
+            return command.f
+        raise NoCommandFoundError(set(opts_input))

@@ -65,3 +65,26 @@ class ShipCommand:
         name = arguments["<name>"] or "case when name is empty"
         # ... your code here
 ```
+
+## Command matching
+
+A command is selected by comparing the **set** of truthy arguments returned by
+docopt against the registered option sets, so the declaration order of the
+options does not matter.
+
+Registering **two different functions for the same set of options** raises a
+`CommandCollisionError` instead of silently keeping one of them at random:
+
+```py
+from commandopt import commandopt
+from commandopt.exceptions import CommandCollisionError
+
+@commandopt(["status"])
+def show_status(arguments):
+    ...
+
+@commandopt(["status"])  # raises CommandCollisionError
+def other_status(arguments):
+    ...
+```
+
