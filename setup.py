@@ -16,7 +16,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jaegerbobomb/commandopt",
-    download_url="https://github.com/jaegerbobomb/commandopt/archive/v0.2.1.tar.gz",
+    download_url="https://github.com/jaegerbobomb/commandopt/archive/v0.3.0.tar.gz",
     author="notmarrco",
     author_email="marc@maj44.com",
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
