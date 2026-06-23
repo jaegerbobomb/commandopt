@@ -1,7 +1,7 @@
 import pytest
 
 from commandopt import commandopt, Command, CommandsOpts
-from commandopt.exceptions import NoCommandFoundError
+from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
 
 def test_commandopt_decorator_only_mandatory_opts():
@@ -54,6 +54,37 @@ def test_command_call_true_executes_function():
         return "executed"
 
     assert Command({"run": True}, call=True) == "executed"
+
+
+def test_duplicate_opts_with_different_functions_raises_collision():
+    @commandopt(["dup"])
+    def first(arguments):
+        return "first"
+
+    with pytest.raises(CommandCollisionError):
+
+        @commandopt(["dup"])
+        def second(arguments):
+            return "second"
+
+
+def test_duplicate_opts_same_function_is_idempotent():
+    @commandopt(["idem"])
+    def function(arguments):
+        return "ok"
+
+    # Re-registering the very same function under the same opts must not raise.
+    Command.add_command(["idem"], function)
+    assert Command.choose_command({"idem": True}) is function
+
+
+def test_command_selection_is_independent_of_opts_order():
+    @commandopt(["a", "b"])
+    def function(arguments):
+        return "ok"
+
+    # The registry must match regardless of the order the opts were declared in.
+    assert Command.choose_command({"b": True, "a": True}) is function
 
 
 def test_command_give_kwargs_raises_not_implemented():
