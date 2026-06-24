@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Commandopt"
+description = "Turn a dict of arguments into cli commands, ideal companion of docopt-ng."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "notmarrco", email = "marc@maj44.com" }]
+# Single source of truth: read statically from commandopt/__init__.py without
+# importing the package at build time (was fragile in the old setup.py).
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+# commandopt accepts any dict of arguments, so the argument parser is an
+# optional companion rather than a hard requirement. docopt-ng is the
+# maintained, drop-in replacement for the original (unmaintained) docopt.
+docopt = ["docopt-ng>=0.9"]
+test = ["pytest", "docopt-ng>=0.9"]
+
+[project.urls]
+Homepage = "https://github.com/jaegerbobomb/commandopt"
+Changelog = "https://github.com/jaegerbobomb/commandopt/blob/master/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = { attr = "commandopt.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["commandopt*"]
+
+[tool.setuptools.package-data]
+commandopt = ["py.typed"]
+
+[tool.ruff]
+# Minimal lint configuration: default pyflakes (F) + pycodestyle errors (E).
+# Kept intentionally narrow so existing style choices are not forced to change.
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.mypy]
+files = ["commandopt"]
+ignore_missing_imports = true

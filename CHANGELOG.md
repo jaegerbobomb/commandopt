@@ -8,21 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `docopt` and `test` optional extras in `setup.py` (`pip install
-  commandopt[docopt]`), pulling in `docopt-ng` without making it a hard
-  dependency.
+- `docopt` and `test` optional extras (`pip install commandopt[docopt]`),
+  pulling in `docopt-ng` without making it a hard dependency.
 - Integration tests (`tests/test_docopt_integration.py`) that feed a real
   `ParsedOptions` produced by docopt-ng to `Command.run`, locking in the
   "dict subclass" compatibility guarantee. They are skipped when docopt-ng is
   not installed.
 
 ### Changed
+- Migrated packaging to a PEP 621 `pyproject.toml` (build backend
+  `setuptools.build_meta`). The version is now read **statically** from
+  `commandopt.__version__` via `tool.setuptools.dynamic`, so the package is no
+  longer imported at build time. `ruff` and `mypy` configuration moved into
+  `pyproject.toml` as well.
 - README now targets the maintained **docopt-ng** instead of the unmaintained
   original docopt, documents the drop-in backward compatibility (`from docopt
   import docopt` still works), and fixes the `commandopt` signature to match the
   code (`list` instead of `List`).
 - CI test job and `tox.ini` install the `test` extra so the docopt-ng
   integration tests actually run.
+
+### Removed
+- Legacy `setup.py`, `setup.cfg`, and `ruff.toml`, now superseded by
+  `pyproject.toml`.
 
 ## [0.4.0] - 2026-06-24
 
