@@ -1,6 +1,7 @@
 # commandopt
 
-Turn a dict of arguments into cli commands, ideal companion of docopt.
+Turn a dict of arguments into cli commands, ideal companion of
+[docopt-ng](https://pypi.org/project/docopt-ng/).
 
 ## Why ?
 
@@ -9,10 +10,28 @@ executed depending on the input arguments of your app (required or optional).
 
 It reduces the boilerplate code in your `main()`.
 
+## Installation
+
+```sh
+pip install commandopt
+# optionally, the maintained argument parser it pairs with:
+pip install docopt-ng
+```
+
+> The original [docopt](https://pypi.org/project/docopt/) has been unmaintained
+> since 2014. **docopt-ng** is its maintained, drop-in replacement: it installs
+> as `docopt-ng` but still exposes the `docopt` module, so `from docopt import
+> docopt` keeps working unchanged. commandopt only relies on the parsed
+> arguments being a `dict` (docopt-ng returns a `ParsedOptions`, which is a
+> `dict` subclass), so it works with either with no code change.
+
+commandopt does **not** depend on docopt-ng directly — it accepts any dict of
+arguments. Install it explicitly (or via the optional extra `commandopt[docopt]`).
+
 ## Signature
 
 ```py
-def commandopt(mandopts: List, opts: List = None):
+def commandopt(mandopts: list[str], opts=None):
     # ...
 ```
 
