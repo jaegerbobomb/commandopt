@@ -48,12 +48,33 @@ def test_no_command_found_error_has_message():
     assert "No command found" in str(error)
 
 
-def test_command_call_true_executes_function():
+def test_run_call_true_executes_function():
     @commandopt(["run"])
     def function(arguments):
         return "executed"
 
-    assert Command({"run": True}, call=True) == "executed"
+    assert Command.run({"run": True}, call=True) == "executed"
+
+
+def test_run_without_call_returns_the_function():
+    @commandopt(["run"])
+    def function(arguments):
+        return "executed"
+
+    selected = Command.run({"run": True})
+    assert callable(selected)
+    assert selected({"run": True}) == "executed"
+
+
+def test_command_is_not_callable_as_selector():
+    # The overloaded __new__ has been removed: Command(...) no longer doubles
+    # as a command selector. Command.run(...) is the only entry point.
+    @commandopt(["run"])
+    def function(arguments):
+        return "executed"
+
+    with pytest.raises(TypeError):
+        Command({"run": True})
 
 
 def test_duplicate_opts_with_different_functions_raises_collision():
@@ -87,10 +108,3 @@ def test_command_selection_is_independent_of_opts_order():
     assert Command.choose_command({"b": True, "a": True}) is function
 
 
-def test_command_give_kwargs_raises_not_implemented():
-    @commandopt(["run"])
-    def function(arguments):
-        return "executed"
-
-    with pytest.raises(NotImplementedError):
-        Command({"run": True}, call=True, give_kwargs=True)

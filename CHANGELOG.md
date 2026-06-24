@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-24
+
+### Added
+- `Command.run(arguments, call=False)`, an explicit classmethod entry point for
+  selecting (and optionally executing) the registered command.
+
+### Changed
+- **Breaking:** command selection now goes through `Command.run(...)` instead of
+  the overloaded `Command(...)` constructor. `Command(arguments)` no longer
+  returns the matching function.
+
+### Removed
+- **Breaking:** the `Command.__new__` overload and its dead code, along with the
+  never-implemented `give_kwargs` parameter (tracked for a future release).
+
 ## [0.3.0] - 2026-06-23
 
 ### Added

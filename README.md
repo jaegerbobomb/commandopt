@@ -45,10 +45,10 @@ import myapp.commands.ship
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')
-    run = Command(arguments)  # get the registered function
-    run(arguments)  # execute the function
-    # or
-    # run = Command(arguments, call=True)
+    command = Command.run(arguments)  # get the registered function
+    command(arguments)  # execute the function
+    # or, to select and execute in one call:
+    # Command.run(arguments, call=True)
 
 ```
 
