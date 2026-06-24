@@ -20,6 +20,13 @@ setup(
     author="notmarrco",
     author_email="marc@maj44.com",
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    # commandopt accepts any dict of arguments, so the argument parser is an
+    # optional companion rather than a hard requirement. docopt-ng is the
+    # maintained, drop-in replacement for the original (unmaintained) docopt.
+    extras_require={
+        "docopt": ["docopt-ng>=0.9"],
+        "test": ["pytest", "docopt-ng>=0.9"],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9",
