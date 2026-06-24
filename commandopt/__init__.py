@@ -5,7 +5,7 @@ from itertools import chain, combinations
 
 from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 
@@ -43,16 +43,18 @@ class Command(object):
     # matching, so two declarations with the same options collide).
     COMMANDS: dict[frozenset[str], CommandsOpts] = {}
 
-    def __new__(cls, arguments, call=False, give_kwargs=False):
-        """Select the right command function and call it if asked."""
+    @classmethod
+    def run(cls, arguments, call=False):
+        """Return the command registered for ``arguments``.
 
+        :param arguments:  The docopt arguments mapping.
+        :param call:       When ``True``, invoke the matching function with
+                           ``arguments`` and return its result instead of the
+                           function itself.
+        """
         f = cls.choose_command(arguments)
-        if call and not give_kwargs:
+        if call:
             return f(arguments)
-        elif call:
-            raise NotImplementedError
-            # TODO get arguments without "--" or "<>"...
-            return f(**arguments)
         return f
 
     @classmethod
