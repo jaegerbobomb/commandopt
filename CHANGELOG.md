@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-24
+
 ### Changed
 - Command registration no longer expands every subset of the optional options
   (`2**len(opts)` entries per command). Each command is now stored as a single

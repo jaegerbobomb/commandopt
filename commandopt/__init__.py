@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
 # Internal registry record: the mandatory options (both as an ordered tuple for
