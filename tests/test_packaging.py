@@ -29,8 +29,8 @@ def test_tox_targets_supported_pythons_only():
     assert min(versions) >= MIN_PYTHON, f"tox.ini targets unsupported Python {min(versions)}"
 
 
-def test_setup_python_requires_matches_floor():
-    text = (ROOT / "setup.py").read_text()
-    match = re.search(r"""python_requires\s*=\s*["']>=\s*(\d+)\.(\d+)["']""", text)
-    assert match, "python_requires not found in setup.py"
+def test_pyproject_requires_python_matches_floor():
+    text = (ROOT / "pyproject.toml").read_text()
+    match = re.search(r"""requires-python\s*=\s*["']>=\s*(\d+)\.(\d+)["']""", text)
+    assert match, "requires-python not found in pyproject.toml"
     assert (int(match.group(1)), int(match.group(2))) == MIN_PYTHON
