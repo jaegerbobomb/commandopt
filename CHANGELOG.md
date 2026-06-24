@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Command registration no longer expands every subset of the optional options
+  (`2**len(opts)` entries per command). Each command is now stored as a single
+  `(mandatory, optional)` record and matched by range
+  (`mandatory ⊆ truthy ⊆ mandatory ∪ optional`). Public matching and collision
+  behaviour are unchanged; collisions are now detected as overlapping accepted
+  ranges. `Command.list_commands()` returns one entry per command (its mandatory
+  options) instead of one per subset.
+- README documents the range-based matching and a new "Limitations / gotchas"
+  section about exact truthy-argument matching (counters, non-`False` defaults).
+
 ### Added
 - `docopt` and `test` optional extras (`pip install commandopt[docopt]`),
   pulling in `docopt-ng` without making it a hard dependency.

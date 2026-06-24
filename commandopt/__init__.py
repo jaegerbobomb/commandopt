@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import functools
 from collections import namedtuple
-from itertools import chain, combinations
 
 from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
 
 __version__ = "0.4.0"
 CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
+
+# Internal registry record: the mandatory options (both as an ordered tuple for
+# display and as a frozenset for matching) plus the set of accepted optional
+# options and the registered function.
+_Command = namedtuple("_Command", ["mandatory", "optional", "opts", "f"])
 
 
 def commandopt(mandopts: list[str], opts=None):
@@ -22,14 +26,10 @@ def commandopt(mandopts: list[str], opts=None):
         def wrapped(*args, **kwargs):
             return f(*args, **kwargs)
 
-        # register wrapped function in Command.COMMANDS mapping
-        Command.add_command(mandopts, wrapped)
-        # get all combinations of optionals arguments
-        # ex : (opt1,), (opt2,), (opt1, opt2) ...
-        opts_combinations = [combinations(opts, r) for r in range(len(opts) + 1)]
-        for combination in chain.from_iterable(opts_combinations):
-            # register wrapped function with optional arguments
-            Command.add_command(mandopts + list(combination), wrapped)
+        # Register a single command describing the whole [mandatory,
+        # mandatory + optional] range, instead of one entry per optional
+        # subset (which used to be 2**len(opts) registrations).
+        Command.add_command(mandopts, wrapped, optional=opts)
         return wrapped
 
     return inner_decorator
@@ -38,10 +38,10 @@ def commandopt(mandopts: list[str], opts=None):
 class Command(object):
     """Dumb class to keep all the registered commands."""
 
-    # Indexed by the frozenset of options for O(1) lookup and natural
-    # duplicate detection (the order of the options is irrelevant when
-    # matching, so two declarations with the same options collide).
-    COMMANDS: dict[frozenset[str], CommandsOpts] = {}
+    # Indexed by the frozenset of mandatory options. A command accepts any
+    # argument set ``S`` with ``mandatory <= S <= mandatory | optional``, so a
+    # single record replaces the historical per-subset expansion.
+    COMMANDS: dict[frozenset[str], _Command] = {}
 
     @classmethod
     def run(cls, arguments, call=False):
@@ -63,22 +63,54 @@ class Command(object):
         cls.COMMANDS = {}
 
     @classmethod
-    def add_command(cls, opts: list[str], f):
-        key = frozenset(opts)
-        existing = cls.COMMANDS.get(key)
+    def add_command(cls, opts: list[str], f, optional=()):
+        """Register ``f`` for the mandatory ``opts`` and the given ``optional``.
+
+        Two *different* functions collide when their accepted argument sets
+        overlap, i.e. when some argument set is accepted by both. For commands
+        ``(M1, O1)`` and ``(M2, O2)`` this happens iff ``M2 \\ M1 <= O1`` and
+        ``M1 \\ M2 <= O2``.
+        """
+        mandatory = frozenset(opts)
+        optional = frozenset(optional)
+
+        existing = cls.COMMANDS.get(mandatory)
         if existing is not None and existing.f is not f:
             raise CommandCollisionError(set(opts), existing.f, f)
-        cls.COMMANDS[key] = CommandsOpts(opts=tuple(opts), f=f)
+
+        for other in cls.COMMANDS.values():
+            if other.mandatory == mandatory or other.f is f:
+                continue
+            if (
+                other.mandatory - mandatory <= optional
+                and mandatory - other.mandatory <= other.optional
+            ):
+                witness = set(mandatory | other.mandatory)
+                raise CommandCollisionError(witness, other.f, f)
+
+        cls.COMMANDS[mandatory] = _Command(
+            mandatory=mandatory, optional=optional, opts=tuple(opts), f=f
+        )
 
     @classmethod
     def list_commands(cls) -> set[CommandsOpts]:
-        return set(cls.COMMANDS.values())
+        return {CommandsOpts(opts=c.opts, f=c.f) for c in cls.COMMANDS.values()}
 
     @classmethod
     def choose_command(cls, arguments):
-        # First get all "True" arguments from docopt
+        # The set of "truthy" arguments returned by docopt.
         opts_input = frozenset(opt for opt in arguments.keys() if arguments[opt])
+
+        # Fast path: an input made of exactly a command's mandatory options.
         command = cls.COMMANDS.get(opts_input)
         if command is not None:
             return command.f
+
+        # General case: find the command whose accepted range contains the
+        # input (mandatory <= input <= mandatory | optional). Collision
+        # detection guarantees at most one such command.
+        for command in cls.COMMANDS.values():
+            if command.mandatory <= opts_input <= command.mandatory | command.optional:
+                return command.f
+
         raise NoCommandFoundError(set(opts_input))
