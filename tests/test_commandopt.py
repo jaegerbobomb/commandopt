@@ -1,3 +1,5 @@
+from itertools import chain, combinations
+
 import pytest
 
 from commandopt import commandopt, Command, CommandsOpts
@@ -106,5 +108,57 @@ def test_command_selection_is_independent_of_opts_order():
 
     # The registry must match regardless of the order the opts were declared in.
     assert Command.choose_command({"b": True, "a": True}) is function
+
+
+def test_optional_opts_do_not_explode_the_registry():
+    # A command with N optionals must register a SINGLE command, not 2**N
+    # entries (the historical "option explosion").
+    @commandopt(["base"], ["o1", "o2", "o3", "o4", "o5"])
+    def function(arguments):
+        return "ok"
+
+    assert len(Command.list_commands()) == 1
+    assert len(Command.COMMANDS) == 1
+
+
+def test_all_optional_subsets_still_resolve_to_the_command():
+    optionals = ["o1", "o2", "o3"]
+
+    @commandopt(["base"], optionals)
+    def function(arguments):
+        return "ok"
+
+    subsets = chain.from_iterable(
+        combinations(optionals, r) for r in range(len(optionals) + 1)
+    )
+    for subset in subsets:
+        arguments = {"base": True, **{opt: True for opt in subset}}
+        assert Command.choose_command(arguments) is function
+
+
+def test_undeclared_truthy_argument_does_not_match():
+    # Any truthy argument outside mandatory ∪ optional makes matching fail
+    # (e.g. a docopt counter like -vvv or an option with a non-False default).
+    @commandopt(["base"], ["o1"])
+    def function(arguments):
+        return "ok"
+
+    with pytest.raises(NoCommandFoundError):
+        Command.choose_command({"base": True, "--undeclared": True})
+
+
+def test_overlapping_optional_ranges_collide():
+    # Two different functions whose accepted argument sets overlap must be
+    # rejected, even when their mandatory parts differ. Here {a, x} is accepted
+    # by both, so they collide.
+    @commandopt(["a"], ["x"])
+    def first(arguments):
+        return "first"
+
+    with pytest.raises(CommandCollisionError):
+
+        @commandopt(["a", "x"])
+        def second(arguments):
+            return "second"
 
 

@@ -88,11 +88,26 @@ class ShipCommand:
 ## Command matching
 
 A command is selected by comparing the **set** of truthy arguments returned by
-docopt against the registered option sets, so the declaration order of the
-options does not matter.
+docopt against the registered command. A command declared with mandatory options
+`M` and optional options `O` matches an input whose truthy set `S` satisfies:
 
-Registering **two different functions for the same set of options** raises a
-`CommandCollisionError` instead of silently keeping one of them at random:
+```
+M ⊆ S ⊆ M ∪ O
+```
+
+In other words, every mandatory option must be present, and any extra truthy
+option must be one of the declared optionals. Declaration order is irrelevant
+(matching is set-based), and each command is stored as a **single** record — no
+matter how many optionals it declares.
+
+> Earlier versions registered every subset of the optionals (`2**len(O)`
+> entries per command). This is no longer the case: a command now costs one
+> registration regardless of the number of optionals, while matching behaves
+> exactly the same.
+
+Registering **two different functions whose accepted argument sets overlap**
+raises a `CommandCollisionError` instead of silently keeping one of them at
+random:
 
 ```py
 from commandopt import commandopt
@@ -106,4 +121,19 @@ def show_status(arguments):
 def other_status(arguments):
     ...
 ```
+
+## Limitations / gotchas
+
+Matching is **exact** over the truthy arguments: every truthy argument must be
+accounted for by the command's mandatory or optional options. Any *unexpected*
+truthy argument makes matching fail with `NoCommandFoundError`, which can be
+surprising with some docopt argument types:
+
+- **Repeatable flags / counters** (`-v` used as `-vvv`) become an integer `> 0`,
+  which is truthy.
+- **Options with a non-`False` default value** are always truthy.
+
+If your usage patterns include such arguments, declare them as optionals on the
+relevant commands (so they fall within `M ∪ O`), or normalise the arguments dict
+before calling `Command.run(...)`.
 
