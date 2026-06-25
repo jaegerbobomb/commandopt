@@ -31,15 +31,19 @@ arguments. Install it explicitly (or via the optional extra `commandopt[docopt]`
 ## Signature
 
 ```py
-def commandopt(mandopts: list[str], opts=None):
+def commandopt(mandopts: list[str], opts: list[str] | None = None):
     # ...
 ```
+
+- `mandopts`: mandatory argument keys — all must be truthy for the command to match.
+- `opts`: optional argument keys that may also be truthy.
 
 ### Call
 
 ```py
-@commandopt(mandatory_arguments, optional_arguments)
-def xxxx(*args, **kwargs):
+@commandopt(["ship", "new", "<name>"], ["--force"])
+def ship_new(arguments):
+    ...
 ```
 
 ## Example usage
@@ -136,4 +140,36 @@ surprising with some docopt argument types:
 If your usage patterns include such arguments, declare them as optionals on the
 relevant commands (so they fall within `M ∪ O`), or normalise the arguments dict
 before calling `Command.run(...)`.
+
+## API reference
+
+The public surface is exported via `__all__`:
+
+- **`@commandopt(mandopts, opts=None)`** — register the decorated function.
+- **`Command.run(arguments, call=False)`** — select the matching function;
+  with `call=True`, invoke it with `arguments` and return its result.
+- **`Command.choose_command(arguments)`** — the lookup primitive: return the
+  matching function without calling it (raises `NoCommandFoundError`).
+- **`Command.list_commands()`** — return a `set` of `CommandsOpts(opts, f)`, one
+  per registered command.
+- **`Command.reset()`** — clear the global registry (handy for test isolation).
+- **`CommandsOpts`** — a `NamedTuple` of `(opts, f)` describing one command.
+
+### Exceptions
+
+All commandopt exceptions derive from **`CommandoptException`**:
+
+- **`NoCommandFoundError`** — no command matched. Exposes `.opts`
+  (the truthy argument keys) and `.message`.
+- **`CommandCollisionError`** — two different functions accept overlapping
+  argument sets. Exposes `.opts`, `.existing`, `.new`, and `.message`.
+
+```py
+from commandopt import Command, NoCommandFoundError
+
+try:
+    handler = Command.run(arguments)
+except NoCommandFoundError as exc:
+    print("unmatched:", sorted(exc.opts))
+```
 
