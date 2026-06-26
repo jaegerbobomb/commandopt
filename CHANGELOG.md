@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-26
+
 ### Added
 - `__all__` now defines the public surface, and `CommandoptException`,
   `NoCommandFoundError`, `CommandCollisionError` are importable directly from the

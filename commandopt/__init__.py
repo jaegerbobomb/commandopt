@@ -21,7 +21,7 @@ __all__ = [
     "CommandCollisionError",
 ]
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 # A decorated command function; the decorator returns the same callable type.
 F = TypeVar("F", bound=Callable[..., Any])
