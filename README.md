@@ -128,14 +128,27 @@ def other_status(arguments):
 
 ## Limitations / gotchas
 
-Matching is **exact** over the truthy arguments: every truthy argument must be
-accounted for by the command's mandatory or optional options. Any *unexpected*
-truthy argument makes matching fail with `NoCommandFoundError`, which can be
-surprising with some docopt argument types:
+Selection looks at the **truthiness of each argument's value, not at the mere
+presence of its key**. docopt returns *every* declared key on every run (each
+option, present or not), so commandopt reduces that full dict to the set of keys
+whose value is truthy — that active subset is what identifies the command:
 
-- **Repeatable flags / counters** (`-v` used as `-vvv`) become an integer `> 0`,
-  which is truthy.
-- **Options with a non-`False` default value** are always truthy.
+```py
+opts_input = frozenset(opt for opt in arguments if arguments[opt])
+```
+
+Matching is then exact over that set: every truthy argument must be accounted for
+by the command's mandatory or optional options, or matching fails with
+`NoCommandFoundError`. Two consequences worth knowing, in *both* directions:
+
+- **Falsy values are dropped.** An absent flag (`False`), an unset option
+  (`None`), `0`, `""`, `[]` are excluded — so a flag you didn't pass never
+  affects matching.
+- **Option values are strings, and non-empty strings are truthy.** `--skip=False`
+  and `--count=0` give the *strings* `'False'` / `'0'`, which are truthy, so the
+  key **does** enter the match set. (A boolean flag valued `False`, by contrast,
+  is dropped.) Likewise repeatable flags / counters (`-vvv` → `3`) and options
+  with a non-`False` default are truthy.
 
 If your usage patterns include such arguments, declare them as optionals on the
 relevant commands (so they fall within `M ∪ O`), or normalise the arguments dict
