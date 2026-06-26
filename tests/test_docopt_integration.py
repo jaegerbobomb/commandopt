@@ -37,10 +37,10 @@ def test_command_run_selects_function_from_real_parsed_options():
         return ("new_ship", arguments["<name>"])
 
     arguments = docopt.docopt(DOC, argv=["ship", "new", "Titanic"])
-    assert Command.run(arguments, call=True) == ("ship_new", ["Titanic"])
+    assert Command.run(arguments) == ("ship_new", ["Titanic"])
 
     arguments = docopt.docopt(DOC, argv=["new-ship", "Boat"])
-    assert Command.run(arguments, call=True) == ("new_ship", ["Boat"])
+    assert Command.run(arguments) == ("new_ship", ["Boat"])
 
     arguments = docopt.docopt(DOC, argv=["new-ship"])
-    assert Command.run(arguments, call=True) == ("new_ship", [])
+    assert Command.run(arguments) == ("new_ship", [])

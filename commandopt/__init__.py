@@ -82,19 +82,41 @@ class Command:
     COMMANDS: dict[frozenset[str], _Command] = {}
 
     @classmethod
-    def run(cls, arguments: Mapping[str, Any], call: bool = False) -> Any:
-        """Return the command registered for ``arguments``.
+    def find(cls, arguments: Mapping[str, Any]) -> Callable[..., Any]:
+        """Select and return the command function for ``arguments``.
+
+        The matching function is returned **without** being executed.
 
         :param arguments:  The docopt arguments mapping.
-        :param call:       When ``True``, invoke the matching function with
-                           ``arguments`` and return its result instead of the
-                           function itself.
         :raises NoCommandFoundError:  If no registered command matches.
         """
-        f = cls.choose_command(arguments)
-        if call:
-            return f(arguments)
-        return f
+        # The set of "truthy" arguments returned by docopt.
+        opts_input = frozenset(opt for opt in arguments if arguments[opt])
+
+        # Fast path: an input made of exactly a command's mandatory options.
+        command = cls.COMMANDS.get(opts_input)
+        if command is not None:
+            return command.f
+
+        # General case: find the command whose accepted range contains the
+        # input (mandatory <= input <= mandatory | optional). Collision
+        # detection guarantees at most one such command.
+        for command in cls.COMMANDS.values():
+            if command.mandatory <= opts_input <= command.mandatory | command.optional:
+                return command.f
+
+        raise NoCommandFoundError(opts_input)
+
+    @classmethod
+    def run(cls, arguments: Mapping[str, Any]) -> Any:
+        """Select the command for ``arguments``, execute it and return its result.
+
+        Equivalent to ``find(arguments)(arguments)``.
+
+        :param arguments:  The docopt arguments mapping.
+        :raises NoCommandFoundError:  If no registered command matches.
+        """
+        return cls.find(arguments)(arguments)
 
     @classmethod
     def reset(cls) -> None:
@@ -148,26 +170,3 @@ class Command:
         """Return one :class:`CommandsOpts` per registered command."""
         return {CommandsOpts(opts=c.opts, f=c.f) for c in cls.COMMANDS.values()}
 
-    @classmethod
-    def choose_command(cls, arguments: Mapping[str, Any]) -> Callable[..., Any]:
-        """Return the function whose accepted range matches ``arguments``.
-
-        :param arguments:  The docopt arguments mapping.
-        :raises NoCommandFoundError:  If no registered command matches.
-        """
-        # The set of "truthy" arguments returned by docopt.
-        opts_input = frozenset(opt for opt in arguments if arguments[opt])
-
-        # Fast path: an input made of exactly a command's mandatory options.
-        command = cls.COMMANDS.get(opts_input)
-        if command is not None:
-            return command.f
-
-        # General case: find the command whose accepted range contains the
-        # input (mandatory <= input <= mandatory | optional). Collision
-        # detection guarantees at most one such command.
-        for command in cls.COMMANDS.values():
-            if command.mandatory <= opts_input <= command.mandatory | command.optional:
-                return command.f
-
-        raise NoCommandFoundError(opts_input)

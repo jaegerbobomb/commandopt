@@ -68,10 +68,11 @@ import myapp.commands.ship
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')
-    command = Command.run(arguments)  # get the registered function
-    command(arguments)  # execute the function
-    # or, to select and execute in one call:
-    # Command.run(arguments, call=True)
+    # select and execute the matching command in one call:
+    Command.run(arguments)
+    # or, to select without executing it:
+    # command = Command.find(arguments)
+    # command(arguments)
 
 ```
 
@@ -138,31 +139,51 @@ opts_input = frozenset(opt for opt in arguments if arguments[opt])
 ```
 
 Matching is then exact over that set: every truthy argument must be accounted for
-by the command's mandatory or optional options, or matching fails with
-`NoCommandFoundError`. Two consequences worth knowing, in *both* directions:
+by the command's mandatory or optional options, or selection fails with
+`NoCommandFoundError`.
 
-- **Falsy values are dropped.** An absent flag (`False`), an unset option
-  (`None`), `0`, `""`, `[]` are excluded — so a flag you didn't pass never
-  affects matching.
-- **Option values are strings, and non-empty strings are truthy.** `--skip=False`
-  and `--count=0` give the *strings* `'False'` / `'0'`, which are truthy, so the
-  key **does** enter the match set. (A boolean flag valued `False`, by contrast,
-  is dropped.) Likewise repeatable flags / counters (`-vvv` → `3`) and options
-  with a non-`False` default are truthy.
+The case to watch for is a **global / application-level argument that is truthy on
+every invocation** — a flag usable with any subcommand, a counter (`-vvv` → `3`),
+or an option with a non-`False` default. It lands in the selection set even though
+it isn't meant to identify a command, and breaks matching:
 
-If your usage patterns include such arguments, declare them as optionals on the
-relevant commands (so they fall within `M ∪ O`), or normalise the arguments dict
-before calling `Command.run(...)`.
+```py
+# Usage: tool [-v] add <item>
+#   tool -v add foo  ->  {"-v": True, "add": True, "<item>": "foo", "remove": False}
+
+@commandopt(["add", "<item>"])          # -v not declared
+def add(arguments): ...
+
+Command.run({"-v": True, "add": True, "<item>": "foo"})
+# NoCommandFoundError: {'-v', 'add', '<item>'} is not accepted by {'add', '<item>'}
+```
+
+If the argument genuinely belongs to a command, declare it as an optional so it
+falls within `M ∪ O`:
+
+```py
+@commandopt(["add", "<item>"], ["-v"])  # now '-v' is accepted
+def add(arguments): ...
+```
+
+For a truly application-wide argument (`--config`, `--debug`, `-v`), declaring it
+on every command is noise; instead drop it from the arguments used for selection,
+while still passing the full dict to the command:
+
+```py
+selection = {k: v for k, v in arguments.items() if k != "--config"}
+Command.find(selection)(arguments)      # match without --config, run with it
+```
 
 ## API reference
 
 The public surface is exported via `__all__`:
 
 - **`@commandopt(mandopts, opts=None)`** — register the decorated function.
-- **`Command.run(arguments, call=False)`** — select the matching function;
-  with `call=True`, invoke it with `arguments` and return its result.
-- **`Command.choose_command(arguments)`** — the lookup primitive: return the
-  matching function without calling it (raises `NoCommandFoundError`).
+- **`Command.find(arguments)`** — select and return the matching function
+  **without** executing it (raises `NoCommandFoundError`).
+- **`Command.run(arguments)`** — select **and execute** the matching function,
+  returning its result (equivalent to `find(arguments)(arguments)`).
 - **`Command.list_commands()`** — return a `set` of `CommandsOpts(opts, f)`, one
   per registered command.
 - **`Command.reset()`** — clear the global registry (handy for test isolation).
@@ -181,7 +202,7 @@ All commandopt exceptions derive from **`CommandoptException`**:
 from commandopt import Command, NoCommandFoundError
 
 try:
-    handler = Command.run(arguments)
+    handler = Command.find(arguments)
 except NoCommandFoundError as exc:
     print("unmatched:", sorted(exc.opts))
 ```

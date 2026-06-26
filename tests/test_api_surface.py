@@ -71,5 +71,5 @@ def test_choose_command_error_carries_the_input_opts():
         return "ok"
 
     with pytest.raises(NoCommandFoundError) as excinfo:
-        Command.choose_command({"unknown": True})
+        Command.find({"unknown": True})
     assert excinfo.value.opts == frozenset({"unknown"})
