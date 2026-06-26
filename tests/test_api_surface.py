@@ -13,6 +13,7 @@ from commandopt.exceptions import (
 EXPECTED_PUBLIC = {
     "commandopt",
     "Command",
+    "Registry",
     "CommandsOpts",
     "CommandoptException",
     "NoCommandFoundError",

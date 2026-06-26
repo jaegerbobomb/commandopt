@@ -167,27 +167,55 @@ def add(arguments): ...
 ```
 
 For a truly application-wide argument (`--config`, `--debug`, `-v`), declaring it
-on every command is noise; instead drop it from the arguments used for selection,
-while still passing the full dict to the command:
+on every command is noise. Tell commandopt to **ignore** it for selection — the
+matched command still receives it in full:
 
 ```py
-selection = {k: v for k, v in arguments.items() if k != "--config"}
-Command.find(selection)(arguments)      # match without --config, run with it
+from commandopt import Command
+
+Command.ignored = {"--config", "--debug", "-v"}   # global default
+Command.run(arguments)                            # --config no longer breaks matching
+
+# ...or per call:
+Command.run(arguments, ignore={"--config"})
 ```
 
 ## API reference
 
 The public surface is exported via `__all__`:
 
-- **`@commandopt(mandopts, opts=None)`** — register the decorated function.
-- **`Command.find(arguments)`** — select and return the matching function
-  **without** executing it (raises `NoCommandFoundError`).
-- **`Command.run(arguments)`** — select **and execute** the matching function,
-  returning its result (equivalent to `find(arguments)(arguments)`).
+- **`@commandopt(mandopts, opts=None, registry=None)`** — register the decorated
+  function; `registry` targets a specific `Registry` (defaults to the global one).
+- **`Command.find(arguments, ignore=())`** — select and return the matching
+  function **without** executing it (raises `NoCommandFoundError`).
+- **`Command.run(arguments, ignore=())`** — select **and execute** the matching
+  function, returning its result (equivalent to `find(arguments)(arguments)`).
+- **`Command.ignored`** — a settable set of application-level argument keys
+  excluded from selection (see *Limitations / gotchas*).
 - **`Command.list_commands()`** — return a `set` of `CommandsOpts(opts, f)`, one
   per registered command.
 - **`Command.reset()`** — clear the global registry (handy for test isolation).
 - **`CommandsOpts`** — a `NamedTuple` of `(opts, f)` describing one command.
+
+### Registry
+
+`Command` is a thin façade over a process-global default `Registry`. Instantiate
+your own for an isolated set of commands — two CLIs in one process, or clean test
+isolation — and pass it to the decorator:
+
+```py
+from commandopt import Registry
+
+cli = Registry(ignore={"--config", "--debug"})
+
+@commandopt(["add", "<item>"], registry=cli)
+def add(arguments): ...
+
+cli.run(arguments)     # same find/run/list_commands/reset API as Command
+```
+
+A `Registry` exposes `add_command`, `find`, `run`, `list_commands`, `reset`, and a
+settable `ignored` set; `find`/`run` also accept a per-call `ignore`.
 
 ### Exceptions
 
