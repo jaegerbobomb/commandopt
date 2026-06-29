@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-26
+
 ### Added
 - `__all__` now defines the public surface, and `CommandoptException`,
   `NoCommandFoundError`, `CommandCollisionError` are importable directly from the
@@ -19,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `py.typed` marker meaningful.
 - README "API reference" section documenting the full public surface and the
   exception hierarchy.
+- `Registry`, an instantiable command registry, so independent command sets can
+  coexist in one process and tests can isolate without the global state.
+  `Command` is now a thin façade over a process-global default `Registry`.
+- Application-level `ignore` support: a `Registry(ignore=...)` set (also settable
+  as `Command.ignored`) plus a per-call `ignore=` on `find`/`run`, excluding
+  global arguments (`--config`, `--debug`, `-v`…) from selection while still
+  passing them to the matched command.
+- `@commandopt(..., registry=...)` to register a command into a specific
+  `Registry`.
 
 ### Changed
 - **Breaking:** command selection is split into two clear entry points:
