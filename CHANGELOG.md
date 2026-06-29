@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keywords, project URLs (Repository, Issues) and classifiers
   (`Development Status :: 4 - Beta`, `Intended Audience`, `Topic`, `Typing :: Typed`).
 - Stricter type checking: `mypy` now runs with `disallow_untyped_defs`.
+- Restructured the collision-detection loop to avoid a bare `continue`, so statement coverage is a consistent 100% across Python versions (3.9 traced
+  that line differently from 3.10+).
 
 ## [0.6.0] - 2026-06-26
 
