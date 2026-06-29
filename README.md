@@ -31,15 +31,19 @@ arguments. Install it explicitly (or via the optional extra `commandopt[docopt]`
 ## Signature
 
 ```py
-def commandopt(mandopts: list[str], opts=None):
+def commandopt(mandopts: list[str], opts: list[str] | None = None):
     # ...
 ```
+
+- `mandopts`: mandatory argument keys — all must be truthy for the command to match.
+- `opts`: optional argument keys that may also be truthy.
 
 ### Call
 
 ```py
-@commandopt(mandatory_arguments, optional_arguments)
-def xxxx(*args, **kwargs):
+@commandopt(["ship", "new", "<name>"], ["--force"])
+def ship_new(arguments):
+    ...
 ```
 
 ## Example usage
@@ -64,10 +68,11 @@ import myapp.commands.ship
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Naval Fate 2.0')
-    command = Command.run(arguments)  # get the registered function
-    command(arguments)  # execute the function
-    # or, to select and execute in one call:
-    # Command.run(arguments, call=True)
+    # select and execute the matching command in one call:
+    Command.run(arguments)
+    # or, to select without executing it:
+    # command = Command.find(arguments)
+    # command(arguments)
 
 ```
 
@@ -124,16 +129,81 @@ def other_status(arguments):
 
 ## Limitations / gotchas
 
-Matching is **exact** over the truthy arguments: every truthy argument must be
-accounted for by the command's mandatory or optional options. Any *unexpected*
-truthy argument makes matching fail with `NoCommandFoundError`, which can be
-surprising with some docopt argument types:
+Selection looks at the **truthiness of each argument's value, not at the mere
+presence of its key**. docopt returns *every* declared key on every run (each
+option, present or not), so commandopt reduces that full dict to the set of keys
+whose value is truthy — that active subset is what identifies the command:
 
-- **Repeatable flags / counters** (`-v` used as `-vvv`) become an integer `> 0`,
-  which is truthy.
-- **Options with a non-`False` default value** are always truthy.
+```py
+opts_input = frozenset(opt for opt in arguments if arguments[opt])
+```
 
-If your usage patterns include such arguments, declare them as optionals on the
-relevant commands (so they fall within `M ∪ O`), or normalise the arguments dict
-before calling `Command.run(...)`.
+Matching is then exact over that set: every truthy argument must be accounted for
+by the command's mandatory or optional options, or selection fails with
+`NoCommandFoundError`.
+
+The case to watch for is a **global / application-level argument that is truthy on
+every invocation** — a flag usable with any subcommand, a counter (`-vvv` → `3`),
+or an option with a non-`False` default. It lands in the selection set even though
+it isn't meant to identify a command, and breaks matching:
+
+```py
+# Usage: tool [-v] add <item>
+#   tool -v add foo  ->  {"-v": True, "add": True, "<item>": "foo", "remove": False}
+
+@commandopt(["add", "<item>"])          # -v not declared
+def add(arguments): ...
+
+Command.run({"-v": True, "add": True, "<item>": "foo"})
+# NoCommandFoundError: {'-v', 'add', '<item>'} is not accepted by {'add', '<item>'}
+```
+
+If the argument genuinely belongs to a command, declare it as an optional so it
+falls within `M ∪ O`:
+
+```py
+@commandopt(["add", "<item>"], ["-v"])  # now '-v' is accepted
+def add(arguments): ...
+```
+
+For a truly application-wide argument (`--config`, `--debug`, `-v`), declaring it
+on every command is noise; instead drop it from the arguments used for selection,
+while still passing the full dict to the command:
+
+```py
+selection = {k: v for k, v in arguments.items() if k != "--config"}
+Command.find(selection)(arguments)      # match without --config, run with it
+```
+
+## API reference
+
+The public surface is exported via `__all__`:
+
+- **`@commandopt(mandopts, opts=None)`** — register the decorated function.
+- **`Command.find(arguments)`** — select and return the matching function
+  **without** executing it (raises `NoCommandFoundError`).
+- **`Command.run(arguments)`** — select **and execute** the matching function,
+  returning its result (equivalent to `find(arguments)(arguments)`).
+- **`Command.list_commands()`** — return a `set` of `CommandsOpts(opts, f)`, one
+  per registered command.
+- **`Command.reset()`** — clear the global registry (handy for test isolation).
+- **`CommandsOpts`** — a `NamedTuple` of `(opts, f)` describing one command.
+
+### Exceptions
+
+All commandopt exceptions derive from **`CommandoptException`**:
+
+- **`NoCommandFoundError`** — no command matched. Exposes `.opts`
+  (the truthy argument keys) and `.message`.
+- **`CommandCollisionError`** — two different functions accept overlapping
+  argument sets. Exposes `.opts`, `.existing`, `.new`, and `.message`.
+
+```py
+from commandopt import Command, NoCommandFoundError
+
+try:
+    handler = Command.find(arguments)
+except NoCommandFoundError as exc:
+    print("unmatched:", sorted(exc.opts))
+```
 

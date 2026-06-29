@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `__all__` now defines the public surface, and `CommandoptException`,
+  `NoCommandFoundError`, `CommandCollisionError` are importable directly from the
+  `commandopt` package.
+- Structured exception attributes: `NoCommandFoundError.opts` and
+  `CommandCollisionError.opts` / `.existing` / `.new`, so error data can be
+  inspected programmatically instead of parsing the message.
+- Full type hints across the public API (the `commandopt` decorator, `Command`
+  methods, and the `CommandsOpts` / internal record), making the shipped
+  `py.typed` marker meaningful.
+- README "API reference" section documenting the full public surface and the
+  exception hierarchy.
+
+### Changed
+- **Breaking:** command selection is split into two clear entry points:
+  `Command.find(arguments)` returns the matching function *without* executing it,
+  and `Command.run(arguments)` now *executes* it and returns the result. The
+  `call=` flag and the redundant `Command.choose_command` are removed. Migration:
+  `Command.run(args)` (old, returned the function) becomes `Command.find(args)`;
+  `Command.run(args, call=True)` becomes `Command.run(args)`.
+- **Breaking:** `Command.add_command`'s first parameter is renamed from `opts`
+  to `mandatory` for consistency with the `@commandopt(mandopts, opts)`
+  decorator (where `opts` means *optional*). Positional callers are unaffected.
+- Exception messages are now deterministic: the offending options are listed
+  sorted instead of in arbitrary set order.
+- README "Limitations / gotchas" now focuses on the one real pitfall — a global /
+  application-level argument (`--config`, `-v`, a non-`False` default) that is
+  truthy on every invocation and breaks selection unless excluded — with concrete
+  workarounds.
+
 ## [0.5.0] - 2026-06-24
 
 ### Changed

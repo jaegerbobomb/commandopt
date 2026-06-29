@@ -1,105 +1,97 @@
 # -*- coding: utf-8 -*-
-import functools
-from collections import namedtuple
+from __future__ import annotations
 
-from commandopt.exceptions import CommandCollisionError, NoCommandFoundError
+import functools
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any, NamedTuple, Optional, TypeVar, cast
+
+from commandopt.exceptions import (
+    CommandCollisionError,
+    CommandoptException,
+    NoCommandFoundError,
+)
+
+__all__ = [
+    "commandopt",
+    "Command",
+    "CommandsOpts",
+    "CommandoptException",
+    "NoCommandFoundError",
+    "CommandCollisionError",
+]
 
 __version__ = "0.5.0"
-CommandsOpts = namedtuple("CommandsOpts", ["opts", "f"])
 
-# Internal registry record: the mandatory options (both as an ordered tuple for
-# display and as a frozenset for matching) plus the set of accepted optional
-# options and the registered function.
-_Command = namedtuple("_Command", ["mandatory", "optional", "opts", "f"])
+# A decorated command function; the decorator returns the same callable type.
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-def commandopt(mandopts: list[str], opts=None):
-    """Decorator to register commands given docopt arguments.
+class CommandsOpts(NamedTuple):
+    """One registered command: its mandatory options and the handler function."""
 
-    :param mandopts:  List of mandatory arguments
-    :param opts:      List of optional arguments
+    opts: tuple[str, ...]
+    f: Callable[..., Any]
+
+
+class _Command(NamedTuple):
+    """Internal registry record.
+
+    ``mandatory`` is kept both as a ``frozenset`` (for matching) and as an
+    ordered ``opts`` tuple (for display in :meth:`Command.list_commands`).
     """
-    opts = [] if opts is None else opts
 
-    def inner_decorator(f):
+    mandatory: frozenset[str]
+    optional: frozenset[str]
+    opts: tuple[str, ...]
+    f: Callable[..., Any]
+
+
+def commandopt(
+    mandopts: list[str], opts: Optional[list[str]] = None
+) -> Callable[[F], F]:
+    """Register the decorated function as the command for ``mandopts``.
+
+    :param mandopts:  Mandatory argument keys; all must be truthy to match.
+    :param opts:      Optional argument keys that may also be truthy.
+    :returns:         A decorator returning the function unchanged.
+    """
+    optional = [] if opts is None else opts
+
+    def inner_decorator(f: F) -> F:
         @functools.wraps(f)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
             return f(*args, **kwargs)
 
-        # Register a single command describing the whole [mandatory,
-        # mandatory + optional] range, instead of one entry per optional
-        # subset (which used to be 2**len(opts) registrations).
-        Command.add_command(mandopts, wrapped, optional=opts)
-        return wrapped
+        # The wrapper gives each (possibly stacked) decorator a distinct
+        # function object, so stacking @commandopt registers independent
+        # commands that all dispatch to the same underlying function.
+        Command.add_command(mandopts, wrapped, optional=optional)
+        return cast(F, wrapped)
 
     return inner_decorator
 
 
-class Command(object):
-    """Dumb class to keep all the registered commands."""
+class Command:
+    """Process-global registry of commands, keyed by their mandatory options.
 
-    # Indexed by the frozenset of mandatory options. A command accepts any
-    # argument set ``S`` with ``mandatory <= S <= mandatory | optional``, so a
-    # single record replaces the historical per-subset expansion.
+    A command accepts any truthy-argument set ``S`` with
+    ``mandatory <= S <= mandatory | optional``; a single record per command
+    replaces the historical per-optional-subset expansion.
+    """
+
     COMMANDS: dict[frozenset[str], _Command] = {}
 
     @classmethod
-    def run(cls, arguments, call=False):
-        """Return the command registered for ``arguments``.
+    def find(cls, arguments: Mapping[str, Any]) -> Callable[..., Any]:
+        """Select and return the command function for ``arguments``.
+
+        The matching function is returned **without** being executed.
 
         :param arguments:  The docopt arguments mapping.
-        :param call:       When ``True``, invoke the matching function with
-                           ``arguments`` and return its result instead of the
-                           function itself.
+        :raises NoCommandFoundError:  If no registered command matches.
         """
-        f = cls.choose_command(arguments)
-        if call:
-            return f(arguments)
-        return f
-
-    @classmethod
-    def reset(cls):
-        """Clear the global registry (useful for test isolation)."""
-        cls.COMMANDS = {}
-
-    @classmethod
-    def add_command(cls, opts: list[str], f, optional=()):
-        """Register ``f`` for the mandatory ``opts`` and the given ``optional``.
-
-        Two *different* functions collide when their accepted argument sets
-        overlap, i.e. when some argument set is accepted by both. For commands
-        ``(M1, O1)`` and ``(M2, O2)`` this happens iff ``M2 \\ M1 <= O1`` and
-        ``M1 \\ M2 <= O2``.
-        """
-        mandatory = frozenset(opts)
-        optional = frozenset(optional)
-
-        existing = cls.COMMANDS.get(mandatory)
-        if existing is not None and existing.f is not f:
-            raise CommandCollisionError(set(opts), existing.f, f)
-
-        for other in cls.COMMANDS.values():
-            if other.mandatory == mandatory or other.f is f:
-                continue
-            if (
-                other.mandatory - mandatory <= optional
-                and mandatory - other.mandatory <= other.optional
-            ):
-                witness = set(mandatory | other.mandatory)
-                raise CommandCollisionError(witness, other.f, f)
-
-        cls.COMMANDS[mandatory] = _Command(
-            mandatory=mandatory, optional=optional, opts=tuple(opts), f=f
-        )
-
-    @classmethod
-    def list_commands(cls) -> set[CommandsOpts]:
-        return {CommandsOpts(opts=c.opts, f=c.f) for c in cls.COMMANDS.values()}
-
-    @classmethod
-    def choose_command(cls, arguments):
         # The set of "truthy" arguments returned by docopt.
-        opts_input = frozenset(opt for opt in arguments.keys() if arguments[opt])
+        opts_input = frozenset(opt for opt in arguments if arguments[opt])
 
         # Fast path: an input made of exactly a command's mandatory options.
         command = cls.COMMANDS.get(opts_input)
@@ -113,4 +105,68 @@ class Command(object):
             if command.mandatory <= opts_input <= command.mandatory | command.optional:
                 return command.f
 
-        raise NoCommandFoundError(set(opts_input))
+        raise NoCommandFoundError(opts_input)
+
+    @classmethod
+    def run(cls, arguments: Mapping[str, Any]) -> Any:
+        """Select the command for ``arguments``, execute it and return its result.
+
+        Equivalent to ``find(arguments)(arguments)``.
+
+        :param arguments:  The docopt arguments mapping.
+        :raises NoCommandFoundError:  If no registered command matches.
+        """
+        return cls.find(arguments)(arguments)
+
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the global registry (useful for test isolation)."""
+        cls.COMMANDS = {}
+
+    @classmethod
+    def add_command(
+        cls,
+        mandatory: Iterable[str],
+        f: Callable[..., Any],
+        optional: Iterable[str] = (),
+    ) -> None:
+        """Register ``f`` for the ``mandatory`` options and the given ``optional``.
+
+        Two *different* functions collide when their accepted argument sets
+        overlap, i.e. when some argument set is accepted by both. For commands
+        ``(M1, O1)`` and ``(M2, O2)`` this happens iff ``M2 \\ M1 <= O1`` and
+        ``M1 \\ M2 <= O2``.
+
+        :raises CommandCollisionError:  If a different function already accepts
+                                        an overlapping argument set.
+        """
+        mandatory_opts = tuple(mandatory)
+        mandatory_set = frozenset(mandatory_opts)
+        optional_set = frozenset(optional)
+
+        existing = cls.COMMANDS.get(mandatory_set)
+        if existing is not None and existing.f is not f:
+            raise CommandCollisionError(mandatory_set, existing.f, f)
+
+        for other in cls.COMMANDS.values():
+            if other.mandatory == mandatory_set or other.f is f:
+                continue
+            if (
+                other.mandatory - mandatory_set <= optional_set
+                and mandatory_set - other.mandatory <= other.optional
+            ):
+                witness = mandatory_set | other.mandatory
+                raise CommandCollisionError(witness, other.f, f)
+
+        cls.COMMANDS[mandatory_set] = _Command(
+            mandatory=mandatory_set,
+            optional=optional_set,
+            opts=mandatory_opts,
+            f=f,
+        )
+
+    @classmethod
+    def list_commands(cls) -> set[CommandsOpts]:
+        """Return one :class:`CommandsOpts` per registered command."""
+        return {CommandsOpts(opts=c.opts, f=c.f) for c in cls.COMMANDS.values()}
+

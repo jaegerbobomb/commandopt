@@ -19,12 +19,12 @@ def test_commandopt_decorator_only_mandatory_opts():
         in Command.list_commands()
     )
     assert (
-        Command.choose_command({"command": True, "--mandatory1": True}).__wrapped__
+        Command.find({"command": True, "--mandatory1": True}).__wrapped__
         == function.__wrapped__.__wrapped__
     )
 
     with pytest.raises(NoCommandFoundError):
-        Command.choose_command({"command": True, "<mandatory2>": True})
+        Command.find({"command": True, "<mandatory2>": True})
 
 
 def test_commandopt_decorator_mandatory_and_optional_opts():
@@ -39,10 +39,10 @@ def test_commandopt_decorator_mandatory_and_optional_opts():
         {"command2": True, "--option1": True, "--option2": True},
     ]
     for args in arguments:
-        assert Command.choose_command(args).__wrapped__ == function.__wrapped__
+        assert Command.find(args).__wrapped__ == function.__wrapped__
 
     with pytest.raises(NoCommandFoundError):
-        Command.choose_command({"--option1": True})
+        Command.find({"--option1": True})
 
 
 def test_no_command_found_error_has_message():
@@ -50,27 +50,32 @@ def test_no_command_found_error_has_message():
     assert "No command found" in str(error)
 
 
-def test_run_call_true_executes_function():
+def test_run_executes_the_matching_function():
     @commandopt(["run"])
     def function(arguments):
         return "executed"
 
-    assert Command.run({"run": True}, call=True) == "executed"
+    assert Command.run({"run": True}) == "executed"
 
 
-def test_run_without_call_returns_the_function():
+def test_find_returns_the_function_without_executing_it():
+    calls = []
+
     @commandopt(["run"])
     def function(arguments):
+        calls.append(arguments)
         return "executed"
 
-    selected = Command.run({"run": True})
+    selected = Command.find({"run": True})
     assert callable(selected)
+    assert calls == []  # find must not execute the command
     assert selected({"run": True}) == "executed"
 
 
 def test_command_is_not_callable_as_selector():
     # The overloaded __new__ has been removed: Command(...) no longer doubles
-    # as a command selector. Command.run(...) is the only entry point.
+    # as a command selector. Command.find(...) / Command.run(...) are the
+    # only entry points.
     @commandopt(["run"])
     def function(arguments):
         return "executed"
@@ -98,7 +103,7 @@ def test_duplicate_opts_same_function_is_idempotent():
 
     # Re-registering the very same function under the same opts must not raise.
     Command.add_command(["idem"], function)
-    assert Command.choose_command({"idem": True}) is function
+    assert Command.find({"idem": True}) is function
 
 
 def test_command_selection_is_independent_of_opts_order():
@@ -107,7 +112,7 @@ def test_command_selection_is_independent_of_opts_order():
         return "ok"
 
     # The registry must match regardless of the order the opts were declared in.
-    assert Command.choose_command({"b": True, "a": True}) is function
+    assert Command.find({"b": True, "a": True}) is function
 
 
 def test_optional_opts_do_not_explode_the_registry():
@@ -133,7 +138,7 @@ def test_all_optional_subsets_still_resolve_to_the_command():
     )
     for subset in subsets:
         arguments = {"base": True, **{opt: True for opt in subset}}
-        assert Command.choose_command(arguments) is function
+        assert Command.find(arguments) is function
 
 
 def test_undeclared_truthy_argument_does_not_match():
@@ -144,7 +149,7 @@ def test_undeclared_truthy_argument_does_not_match():
         return "ok"
 
     with pytest.raises(NoCommandFoundError):
-        Command.choose_command({"base": True, "--undeclared": True})
+        Command.find({"base": True, "--undeclared": True})
 
 
 def test_overlapping_optional_ranges_collide():
