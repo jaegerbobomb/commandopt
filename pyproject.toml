@@ -3,16 +3,20 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Commandopt"
+name = "commandopt"
 description = "Turn a dict of arguments into cli commands, ideal companion of docopt-ng."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "notmarrco", email = "marc@maj44.com" }]
+keywords = ["cli", "docopt", "docopt-ng", "command", "dispatch", "arguments"]
 # Single source of truth: read statically from commandopt/__init__.py without
-# importing the package at build time (was fragile in the old setup.py).
+# importing the package at build time.
 dynamic = ["version"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -21,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 
 [project.optional-dependencies]
@@ -28,10 +33,12 @@ classifiers = [
 # optional companion rather than a hard requirement. docopt-ng is the
 # maintained, drop-in replacement for the original (unmaintained) docopt.
 docopt = ["docopt-ng>=0.9"]
-test = ["pytest", "docopt-ng>=0.9"]
+test = ["pytest", "pytest-cov", "docopt-ng>=0.9"]
 
 [project.urls]
 Homepage = "https://github.com/jaegerbobomb/commandopt"
+Repository = "https://github.com/jaegerbobomb/commandopt"
+Issues = "https://github.com/jaegerbobomb/commandopt/issues"
 Changelog = "https://github.com/jaegerbobomb/commandopt/blob/master/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
@@ -54,3 +61,4 @@ select = ["E", "F"]
 [tool.mypy]
 files = ["commandopt"]
 ignore_missing_imports = true
+disallow_untyped_defs = true

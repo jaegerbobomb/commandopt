@@ -21,7 +21,7 @@ __all__ = [
     "CommandCollisionError",
 ]
 
-__version__ = "0.6.0"
+__version__ = "1.0.0rc1"
 
 # A decorated command function; the decorator returns the same callable type.
 F = TypeVar("F", bound=Callable[..., Any])
@@ -95,10 +95,13 @@ class Registry:
             raise CommandCollisionError(mandatory_set, existing.f, f)
 
         for other in self._commands.values():
-            if other.mandatory == mandatory_set or other.f is f:
-                continue
+            # Skip the same command (idempotent re-registration). Computed
+            # inline rather than via ``continue`` so coverage is consistent
+            # across Python versions.
+            is_same_command = other.mandatory == mandatory_set or other.f is f
             if (
-                other.mandatory - mandatory_set <= optional_set
+                not is_same_command
+                and other.mandatory - mandatory_set <= optional_set
                 and mandatory_set - other.mandatory <= other.optional
             ):
                 witness = mandatory_set | other.mandatory

@@ -1,5 +1,10 @@
 # commandopt
 
+[![CI](https://github.com/jaegerbobomb/commandopt/actions/workflows/ci.yml/badge.svg)](https://github.com/jaegerbobomb/commandopt/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/commandopt.svg)](https://pypi.org/project/commandopt/)
+[![Python versions](https://img.shields.io/pypi/pyversions/commandopt.svg)](https://pypi.org/project/commandopt/)
+[![License: MIT](https://img.shields.io/pypi/l/commandopt.svg)](LICENSE)
+
 Turn a dict of arguments into cli commands, ideal companion of
 [docopt-ng](https://pypi.org/project/docopt-ng/).
 
@@ -235,3 +240,14 @@ except NoCommandFoundError as exc:
     print("unmatched:", sorted(exc.opts))
 ```
 
+## Upgrading to 0.6
+
+0.6 reshaped the selection API (full details in the
+[CHANGELOG](CHANGELOG.md)):
+
+- `Command.run(arguments)` no longer returns the function — it now **executes**
+  it. Use `Command.find(arguments)` to select without running.
+- `Command.run(arguments, call=True)` → `Command.run(arguments)`.
+- `Command.choose_command(...)` is removed — use `Command.find(...)`.
+- `Command.add_command(opts=...)` → `Command.add_command(mandatory=...)`
+  (positional callers are unaffected).

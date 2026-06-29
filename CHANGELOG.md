@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- PyPI release automation: a tag-triggered workflow publishing via Trusted
+  Publishing (OIDC, no stored token), and a CI build job validating the
+  distribution with `twine check`.
+- Test coverage measurement (`pytest-cov`, enforced at 100% in CI) and edge-case
+  tests (empty mandopts, falsy/empty arguments, unicode keys).
+- `CONTRIBUTING.md` and README badges (CI, PyPI, Python versions, license).
+
+### Changed
+- Packaging metadata: lower-cased distribution name (`commandopt`), added
+  keywords, project URLs (Repository, Issues) and classifiers
+  (`Development Status :: 4 - Beta`, `Intended Audience`, `Topic`, `Typing :: Typed`).
+- Stricter type checking: `mypy` now runs with `disallow_untyped_defs`.
+- Restructured the collision-detection loop to avoid a bare `continue`, so statement coverage is a consistent 100% across Python versions (3.9 traced
+  that line differently from 3.10+).
+
 ## [0.6.0] - 2026-06-26
 
 ### Added
